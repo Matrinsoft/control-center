@@ -1,0 +1,77 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcBoltDeviceDialog: Adw.Dialog {
+  title: _("Device Identifier");
+  content-width: 480;
+
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Adw.ToastOverlay toast_overlay {
+      child: Adw.PreferencesPage {
+        Adw.PreferencesGroup {
+          Adw.ActionRow status_row {
+            title: _("Status");
+
+            styles [
+              "property",
+            ]
+          }
+
+          Adw.ActionRow uuid_row {
+            title: _("UUID");
+
+            styles [
+              "property",
+            ]
+          }
+
+          Adw.ActionRow time_row {
+            title: _("Timestamp");
+
+            styles [
+              "property",
+            ]
+          }
+        }
+
+        Adw.PreferencesGroup parents_group {
+          visible: false;
+          title: _("Depends on other devices");
+
+          ListBox parents_devices {}
+        }
+
+        Adw.PreferencesGroup {
+          header-suffix: Adw.Spinner spinner {
+            visible: false;
+          };
+
+          Adw.ButtonRow connect_button {
+            title: _("_Authorize and Connect");
+            use-underline: true;
+            receives-default: true;
+            activated => $on_connect_button_clicked_cb(template);
+
+            styles [
+              "suggested-action",
+            ]
+          }
+
+          Adw.ButtonRow forget_button {
+            title: _("_Forget Device");
+            use-underline: true;
+            receives-default: false;
+            activated => $on_forget_button_clicked_cb(template);
+
+            styles [
+              "destructive-action",
+            ]
+          }
+        }
+      };
+    };
+  }
+}

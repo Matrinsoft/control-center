@@ -1,0 +1,192 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcKeyboardShortcutEditor: Adw.Dialog {
+  content-width: 500;
+  content-height: 350;
+
+  closed => $cc_keyboard_shortcut_editor_closed(template);
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar headerbar {
+      [start]
+      Button cancel_button {
+        label: _("_Cancel");
+        use-underline: true;
+        clicked => $cancel_button_clicked_cb(template);
+      }
+
+      [end]
+      Button add_button {
+        label: _("_Add");
+        use-underline: true;
+        sensitive: false;
+        clicked => $add_button_clicked_cb(template);
+
+        styles [
+          "suggested-action",
+        ]
+      }
+
+      [end]
+      Button done_button {
+        label: _("_Done");
+        use-underline: true;
+        clicked => $on_done_button_clicked_cb(template);
+
+        styles [
+          "suggested-action",
+        ]
+      }
+    }
+
+    content: Stack stack {
+      Adw.PreferencesPage edit_page {
+        Adw.PreferencesGroup {
+          Label top_info_label {
+            justify: center;
+            wrap: true;
+            wrap-mode: word_char;
+            width-chars: 15;
+            max-width-chars: 20;
+          }
+        }
+
+        Adw.PreferencesGroup {
+          Picture {
+            halign: center;
+            valign: center;
+            can-shrink: false;
+            file: "resource:///org/gnome/control-center/keyboard/enter-keyboard-shortcut.svg";
+          }
+        }
+
+        Adw.PreferencesGroup {
+          Label info_action_label {
+            wrap: true;
+            use-markup: true;
+            justify: center;
+
+            styles [
+              "dim-label",
+            ]
+          }
+        }
+      }
+
+      Adw.PreferencesPage standard_page {
+        Adw.PreferencesGroup {
+          Label standard_info_label {
+            wrap: true;
+            justify: center;
+            wrap-mode: char;
+            width-chars: 15;
+            max-width-chars: 20;
+          }
+        }
+
+        Adw.PreferencesGroup {
+          Adw.ShortcutLabel shortcut_accel_label {
+            halign: center;
+            disabled-text: _("None");
+          }
+
+          Label shortcut_disabled_label {
+            label: _("Shortcut Disabled");
+            hexpand: true;
+            wrap: true;
+            visible: false;
+            wrap-mode: char;
+            width-chars: 15;
+            max-width-chars: 20;
+
+            styles [
+              "title-2",
+            ]
+          }
+        }
+
+        Adw.PreferencesGroup {
+          Label shortcut_conflict_label {
+            justify: center;
+            visible: false;
+            wrap: true;
+            wrap-mode: char;
+            width-chars: 0;
+            max-width-chars: 0;
+          }
+        }
+      }
+
+      Adw.PreferencesPage custom_page {
+        Adw.PreferencesGroup {
+          Adw.EntryRow name_entry {
+            title: _("Name");
+            notify::text => $name_entry_changed_cb(template);
+          }
+
+          Adw.EntryRow command_entry {
+            title: _("Command");
+            notify::text => $command_entry_changed_cb(template);
+          }
+
+          Adw.ActionRow shortcut_action_row {
+            title: _("Shortcut");
+            activatable: true;
+            activated => $change_custom_shortcut_row_activated_cb(template);
+
+            styles [
+              "property",
+            ]
+
+            [suffix]
+            Image {
+              icon-name: "document-edit-symbolic";
+
+              styles [
+                "edit-icon",
+              ]
+            }
+          }
+        }
+
+        Adw.PreferencesGroup {
+          Button remove_button {
+            label: _("_Remove");
+            use-underline: true;
+            halign: center;
+            clicked => $remove_button_clicked_cb(template);
+
+            styles [
+              "destructive-action",
+              "pill",
+            ]
+          }
+
+          Label new_shortcut_conflict_label {
+            visible: false;
+            justify: center;
+            wrap: true;
+            wrap-mode: char;
+            width-chars: 0;
+            max-width-chars: 0;
+          }
+        }
+      }
+    };
+  };
+
+  EventControllerKey {
+    propagation-phase: capture;
+    key-pressed => $on_key_pressed_cb(template);
+  }
+}
+
+SizeGroup {
+  widgets [
+    cancel_button,
+    add_button,
+    done_button,
+  ]
+}

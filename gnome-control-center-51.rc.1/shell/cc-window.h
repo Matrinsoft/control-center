@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2010 Intel, Inc.
+ *
+ * The Control Center is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * The Control Center is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the Control Center; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * Author: Thomas Wood <thos@gnome.org>
+ */
+
+#pragma once
+
+#include "cc-shell-model.h"
+#include <adwaita.h>
+
+G_BEGIN_DECLS
+
+#define CC_TYPE_WINDOW (cc_window_get_type ())
+G_DECLARE_FINAL_TYPE (CcWindow, cc_window, CC, WINDOW, AdwApplicationWindow);
+
+/* Forward declaration to avoid circular includes with cc-panel.h */
+typedef struct _CcPanel CcPanel;
+CcWindow *cc_window_new (GtkApplication *application, CcShellModel *model);
+
+CcPanel *cc_window_get_active_panel (CcWindow *window);
+void cc_window_set_active_panel (CcWindow *window, CcPanel *panel);
+gboolean cc_window_set_active_panel_from_id (CcWindow *window, const gchar *id, GVariant *parameters, GError **error);
+
+void cc_window_set_search_item (CcWindow *window, const char *search);
+
+void cc_window_enable_single_panel_mode (CcWindow *self);
+
+AdwNavigationView *cc_window_get_navigation_view (CcWindow *self);
+
+G_END_DECLS

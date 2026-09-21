@@ -1,0 +1,83 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $NetDeviceEthernet: Adw.PreferencesGroup {
+  title: _("Wired");
+
+  header-suffix: Button {
+    tooltip-text: _("Add Ethernet Connection");
+    icon-name: "list-add-symbolic";
+    clicked => $add_profile_button_clicked_cb(template);
+
+    styles [
+      "flat",
+    ]
+  };
+
+  ListBox empty_connection_list {
+    selection-mode: none;
+
+    [placeholder]
+    Label {
+      label: _("Not set up");
+      wrap: true;
+      max-width-chars: 50;
+
+      styles [
+        "dim-label",
+        "cc-placeholder-row",
+      ]
+    }
+
+    styles [
+      "boxed-list",
+    ]
+
+    accessibility {
+      label: _("Wired");
+    }
+  }
+
+  Stack connection_stack {
+    ListBox connection_list {
+      selection-mode: none;
+      row-activated => $connection_list_row_activated_cb(template);
+
+      styles [
+        "boxed-list",
+      ]
+
+      accessibility {
+        label: _("Wired");
+      }
+    }
+
+    ListBox details_listbox {
+      selection-mode: none;
+
+      styles [
+        "boxed-list",
+      ]
+
+      Adw.ActionRow details_row {
+        activatable-widget: device_off_switch;
+
+        Switch device_off_switch {
+          valign: center;
+          notify::active => $device_off_switch_changed_cb(template);
+        }
+
+        Button details_button {
+          tooltip-text: _("Network Options");
+          valign: center;
+          icon-name: "cog-wheel-symbolic";
+          clicked => $details_button_clicked_cb(template);
+
+          styles [
+            "flat",
+          ]
+        }
+      }
+    }
+  }
+}
