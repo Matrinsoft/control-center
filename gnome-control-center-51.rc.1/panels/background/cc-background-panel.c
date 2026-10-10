@@ -73,6 +73,10 @@ struct _CcBackgroundPanel {
     gboolean dash_combos_updating;
 
     GtkWidget *dash_group;
+    GtkWidget *dash_dock_enabled_row;
+    GtkWidget *dash_dock_position_row;
+    GtkWidget *dash_dock_autohide_row;
+    GtkWidget *dash_dock_reserve_row;
     GtkWidget *dash_alignment_row;
     GtkWidget *dash_click_action_row;
     GtkWidget *dash_icon_size_row;
@@ -523,8 +527,10 @@ sync_dash_combo_rows (CcBackgroundPanel *self)
 {
     static const char *const alignments[] = {"center", "start", "end"};
     static const char *const click_actions[] = {"launch", "minimize", "cycle-windows", "focus-or-launch"};
+    static const char *const positions[] = {"bottom", "left", "right"};
     g_autofree char *alignment = NULL;
     g_autofree char *click_action = NULL;
+    g_autofree char *position = NULL;
     guint i;
 
     self->dash_combos_updating = TRUE;
@@ -539,6 +545,12 @@ sync_dash_combo_rows (CcBackgroundPanel *self)
     for (i = 0; i < G_N_ELEMENTS (click_actions); i++) {
         if (g_strcmp0 (click_action, click_actions[i]) == 0)
             adw_combo_row_set_selected (ADW_COMBO_ROW (self->dash_click_action_row), i);
+    }
+
+    position = g_settings_get_string (self->dash_settings, "dock-position");
+    for (i = 0; i < G_N_ELEMENTS (positions); i++) {
+        if (g_strcmp0 (position, positions[i]) == 0)
+            adw_combo_row_set_selected (ADW_COMBO_ROW (self->dash_dock_position_row), i);
     }
 
     self->dash_combos_updating = FALSE;
@@ -585,6 +597,22 @@ on_dash_click_action_row_selected_cb (CcBackgroundPanel *self,
 }
 
 static void
+on_dash_dock_position_row_selected_cb (CcBackgroundPanel *self,
+                                       AdwComboRow       *row,
+                                       GParamSpec        *pspec)
+{
+    static const char *const values[] = {"bottom", "left", "right"};
+    guint selected;
+
+    if (self->dash_combos_updating)
+        return;
+
+    selected = adw_combo_row_get_selected (row);
+    if (selected < G_N_ELEMENTS (values))
+        g_settings_set_string (self->dash_settings, "dock-position", values[selected]);
+}
+
+static void
 setup_dash_settings (CcBackgroundPanel *self)
 {
     GSettings *settings = self->dash_settings;
@@ -597,6 +625,9 @@ setup_dash_settings (CcBackgroundPanel *self)
     g_signal_connect_object (self->dash_click_action_row, "notify::selected",
                              G_CALLBACK (on_dash_click_action_row_selected_cb), self,
                              G_CONNECT_SWAPPED);
+    g_signal_connect_object (self->dash_dock_position_row, "notify::selected",
+                             G_CALLBACK (on_dash_dock_position_row_selected_cb), self,
+                             G_CONNECT_SWAPPED);
 
     bind_dash_spin_row (settings, "icon-size", self->dash_icon_size_row);
     bind_dash_spin_row (settings, "icon-spacing", self->dash_icon_spacing_row);
@@ -606,6 +637,12 @@ setup_dash_settings (CcBackgroundPanel *self)
     bind_dash_spin_row (settings, "corner-radius", self->dash_corner_radius_row);
     bind_dash_spin_row (settings, "border-width", self->dash_border_width_row);
 
+    g_settings_bind (settings, "dock-enabled", self->dash_dock_enabled_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (settings, "dock-autohide", self->dash_dock_autohide_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (settings, "dock-reserve-space", self->dash_dock_reserve_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
     g_settings_bind (settings, "blur-background", self->dash_background_blur_row,
                      "active", G_SETTINGS_BIND_DEFAULT);
     g_settings_bind (settings, "show-running-indicator", self->dash_running_indicator_row,
@@ -620,6 +657,9 @@ setup_dash_settings (CcBackgroundPanel *self)
                              G_CALLBACK (on_dash_setting_changed_cb), self,
                              G_CONNECT_SWAPPED);
     g_signal_connect_object (settings, "changed::click-action",
+                             G_CALLBACK (on_dash_setting_changed_cb), self,
+                             G_CONNECT_SWAPPED);
+    g_signal_connect_object (settings, "changed::dock-position",
                              G_CALLBACK (on_dash_setting_changed_cb), self,
                              G_CONNECT_SWAPPED);
 }
@@ -679,6 +719,10 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, default_toggle);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dark_toggle);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_group);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_dock_enabled_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_dock_position_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_dock_autohide_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_dock_reserve_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_alignment_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_click_action_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_icon_size_row);

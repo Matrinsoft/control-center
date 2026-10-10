@@ -137,8 +137,34 @@ template $CcBackgroundPanel: $CcPanel {
             title: _("Dash");
             description: _("Customize the application dock in the overview.");
 
+            Adw.SwitchRow dash_dock_enabled_row {
+              title: _("Show on Desktop");
+              subtitle: _("Keep the dash visible as a dock on the desktop");
+            }
+
+            Adw.ComboRow dash_dock_position_row {
+              title: _("Dock Position");
+              model: StringList {
+                strings [
+                  _("Bottom"),
+                  _("Left"),
+                  _("Right"),
+                ]
+              };
+            }
+
+            Adw.SwitchRow dash_dock_autohide_row {
+              title: _("Automatically Hide");
+              subtitle: _("Reveal the dock when the pointer touches its screen edge");
+            }
+
+            Adw.SwitchRow dash_dock_reserve_row {
+              title: _("Reserve Space");
+              subtitle: _("Keep maximized windows clear of the dock");
+            }
+
             Adw.ComboRow dash_alignment_row {
-              title: _("Position");
+              title: _("Alignment");
               model: StringList {
                 strings [
                   _("Center"),
