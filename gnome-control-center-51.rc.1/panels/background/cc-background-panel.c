@@ -91,6 +91,7 @@ struct _CcBackgroundPanel {
     GtkWidget *dash_border_width_row;
     GtkWidget *dash_border_color_row;
     GtkWidget *dash_border_color_button;
+    GtkWidget *dash_window_previews_row;
     GtkWidget *dash_running_indicator_row;
     GtkWidget *dash_labels_row;
 };
@@ -645,6 +646,8 @@ setup_dash_settings (CcBackgroundPanel *self)
                      "active", G_SETTINGS_BIND_DEFAULT);
     g_settings_bind (settings, "blur-background", self->dash_background_blur_row,
                      "active", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (settings, "show-window-previews", self->dash_window_previews_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
     g_settings_bind (settings, "show-running-indicator", self->dash_running_indicator_row,
                      "active", G_SETTINGS_BIND_DEFAULT);
     g_settings_bind (settings, "show-app-labels", self->dash_labels_row,
@@ -737,6 +740,7 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_border_width_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_border_color_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_border_color_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_window_previews_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_running_indicator_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_labels_row);
 
