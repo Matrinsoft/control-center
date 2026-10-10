@@ -133,6 +133,137 @@ template $CcBackgroundPanel: $CcPanel {
             }
           }
 
+          Adw.PreferencesGroup dash_group {
+            title: _("Dash");
+            description: _("Customize the application dock in the overview.");
+
+            Adw.ComboRow dash_alignment_row {
+              title: _("Position");
+              model: StringList {
+                strings [
+                  _("Center"),
+                  _("Left"),
+                  _("Right"),
+                ]
+              };
+            }
+
+            Adw.SpinRow dash_icon_size_row {
+              title: _("Icon Size");
+              adjustment: Adjustment {
+                lower: 32;
+                upper: 128;
+                step-increment: 8;
+                page-increment: 16;
+              };
+            }
+
+            Adw.SpinRow dash_icon_spacing_row {
+              title: _("Icon Spacing");
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 32;
+                step-increment: 1;
+                page-increment: 4;
+              };
+            }
+
+            Adw.SpinRow dash_max_icons_row {
+              title: _("Maximum Icons per Row");
+              subtitle: _("Set to 0 for no limit");
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 64;
+                step-increment: 1;
+                page-increment: 4;
+              };
+            }
+
+            Adw.ComboRow dash_click_action_row {
+              title: _("Click Action");
+              model: StringList {
+                strings [
+                  _("Launch"),
+                  _("Minimize"),
+                  _("Switch Windows"),
+                  _("Focus or Launch"),
+                ]
+              };
+            }
+
+            Adw.SwitchRow dash_running_indicator_row {
+              title: _("Show Running Indicator");
+            }
+
+            Adw.SwitchRow dash_labels_row {
+              title: _("Show App Names on Hover");
+            }
+
+            Adw.SpinRow dash_animation_row {
+              title: _("Animation Duration");
+              subtitle: _("Milliseconds");
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 1000;
+                step-increment: 50;
+                page-increment: 100;
+              };
+            }
+
+            Adw.SwitchRow dash_background_blur_row {
+              title: _("Blur Background");
+            }
+
+            Adw.ActionRow dash_background_color_row {
+              title: _("Background Color");
+
+              [suffix]
+              ColorDialogButton dash_background_color_button {
+                valign: center;
+              }
+            }
+
+            Adw.SpinRow dash_background_opacity_row {
+              title: _("Background Opacity");
+              subtitle: _("Percent");
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 100;
+                step-increment: 5;
+                page-increment: 10;
+              };
+            }
+
+            Adw.SpinRow dash_corner_radius_row {
+              title: _("Corner Radius");
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 64;
+                step-increment: 1;
+                page-increment: 4;
+              };
+            }
+
+            Adw.SpinRow dash_border_width_row {
+              title: _("Border Width");
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 8;
+                step-increment: 1;
+                page-increment: 2;
+              };
+            }
+
+            Adw.ActionRow dash_border_color_row {
+              title: _("Border Color");
+
+              [suffix]
+              ColorDialogButton dash_border_color_button {
+                valign: center;
+              }
+            }
+          }
+
           Adw.PreferencesGroup {
             title: _("Background");
 

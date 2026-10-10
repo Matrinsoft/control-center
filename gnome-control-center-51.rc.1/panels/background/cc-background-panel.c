@@ -20,6 +20,7 @@
 
 #include <config.h>
 
+#include <adwaita.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
 #include <glib/gstdio.h>
@@ -66,6 +67,28 @@ struct _CcBackgroundPanel {
     CcBackgroundPreview *dark_preview;
     GtkToggleButton *default_toggle;
     GtkToggleButton *dark_toggle;
+
+    /* Lingmo OS dash settings (provided by gnome-shell) */
+    GSettings *dash_settings;
+    gboolean dash_combos_updating;
+
+    GtkWidget *dash_group;
+    GtkWidget *dash_alignment_row;
+    GtkWidget *dash_click_action_row;
+    GtkWidget *dash_icon_size_row;
+    GtkWidget *dash_icon_spacing_row;
+    GtkWidget *dash_max_icons_row;
+    GtkWidget *dash_animation_row;
+    GtkWidget *dash_background_color_row;
+    GtkWidget *dash_background_color_button;
+    GtkWidget *dash_background_opacity_row;
+    GtkWidget *dash_background_blur_row;
+    GtkWidget *dash_corner_radius_row;
+    GtkWidget *dash_border_width_row;
+    GtkWidget *dash_border_color_row;
+    GtkWidget *dash_border_color_button;
+    GtkWidget *dash_running_indicator_row;
+    GtkWidget *dash_labels_row;
 };
 
 CC_PANEL_REGISTER (CcBackgroundPanel, cc_background_panel)
@@ -411,6 +434,196 @@ on_add_picture_button_clicked_cb (CcBackgroundPanel *self)
     cc_background_chooser_select_file (self->background_chooser);
 }
 
+#define DASH_SCHEMA_ID "org.gnome.shell.dash"
+
+/* The dash settings live in a separate schema that is provided by our
+ * gnome-shell build. On a stock installation it does not exist, in which case
+ * the whole group is hidden. */
+static GSettings *
+dash_settings_new (void)
+{
+    g_autoptr(GSettingsSchema) schema = NULL;
+
+    schema = g_settings_schema_source_lookup (g_settings_schema_source_get_default (),
+                                              DASH_SCHEMA_ID, TRUE);
+    if (schema == NULL)
+        return NULL;
+
+    return g_settings_new_full (schema, NULL, NULL);
+}
+
+static gboolean
+dash_int_to_double (GValue   *value,
+                    GVariant *variant,
+                    gpointer  user_data)
+{
+    g_value_set_double (value, g_variant_get_int32 (variant));
+    return TRUE;
+}
+
+static GVariant *
+dash_double_to_int (const GValue       *value,
+                    const GVariantType *expected_type,
+                    gpointer            user_data)
+{
+    return g_variant_new_int32 ((gint32) (g_value_get_double (value) + 0.5));
+}
+
+static void
+bind_dash_spin_row (GSettings *settings,
+                    const char *key,
+                    GtkWidget *row)
+{
+    g_settings_bind_with_mapping (settings, key, row, "value",
+                                  G_SETTINGS_BIND_DEFAULT,
+                                  dash_int_to_double, dash_double_to_int,
+                                  NULL, NULL);
+}
+
+static gboolean
+dash_string_to_rgba (GValue   *value,
+                     GVariant *variant,
+                     gpointer  user_data)
+{
+    GdkRGBA rgba;
+
+    if (!gdk_rgba_parse (&rgba, g_variant_get_string (variant, NULL)))
+        return FALSE;
+
+    g_value_set_boxed (value, &rgba);
+    return TRUE;
+}
+
+static GVariant *
+dash_rgba_to_string (const GValue       *value,
+                     const GVariantType *expected_type,
+                     gpointer            user_data)
+{
+    const GdkRGBA *rgba = g_value_get_boxed (value);
+
+    if (rgba == NULL)
+        return NULL;
+
+    return g_variant_new_string (gdk_rgba_to_string (rgba));
+}
+
+static void
+bind_dash_color_button (GSettings *settings,
+                        const char *key,
+                        GtkWidget *button)
+{
+    g_settings_bind_with_mapping (settings, key, button, "rgba",
+                                  G_SETTINGS_BIND_DEFAULT,
+                                  dash_string_to_rgba, dash_rgba_to_string,
+                                  NULL, NULL);
+}
+
+static void
+sync_dash_combo_rows (CcBackgroundPanel *self)
+{
+    static const char *const alignments[] = {"center", "start", "end"};
+    static const char *const click_actions[] = {"launch", "minimize", "cycle-windows", "focus-or-launch"};
+    g_autofree char *alignment = NULL;
+    g_autofree char *click_action = NULL;
+    guint i;
+
+    self->dash_combos_updating = TRUE;
+
+    alignment = g_settings_get_string (self->dash_settings, "dash-alignment");
+    for (i = 0; i < G_N_ELEMENTS (alignments); i++) {
+        if (g_strcmp0 (alignment, alignments[i]) == 0)
+            adw_combo_row_set_selected (ADW_COMBO_ROW (self->dash_alignment_row), i);
+    }
+
+    click_action = g_settings_get_string (self->dash_settings, "click-action");
+    for (i = 0; i < G_N_ELEMENTS (click_actions); i++) {
+        if (g_strcmp0 (click_action, click_actions[i]) == 0)
+            adw_combo_row_set_selected (ADW_COMBO_ROW (self->dash_click_action_row), i);
+    }
+
+    self->dash_combos_updating = FALSE;
+}
+
+static void
+on_dash_setting_changed_cb (CcBackgroundPanel *self,
+                            GSettings         *settings,
+                            const char        *key)
+{
+    sync_dash_combo_rows (self);
+}
+
+static void
+on_dash_alignment_row_selected_cb (CcBackgroundPanel *self,
+                                   AdwComboRow       *row,
+                                   GParamSpec        *pspec)
+{
+    static const char *const values[] = {"center", "start", "end"};
+    guint selected;
+
+    if (self->dash_combos_updating)
+        return;
+
+    selected = adw_combo_row_get_selected (row);
+    if (selected < G_N_ELEMENTS (values))
+        g_settings_set_string (self->dash_settings, "dash-alignment", values[selected]);
+}
+
+static void
+on_dash_click_action_row_selected_cb (CcBackgroundPanel *self,
+                                      AdwComboRow       *row,
+                                      GParamSpec        *pspec)
+{
+    static const char *const values[] = {"launch", "minimize", "cycle-windows", "focus-or-launch"};
+    guint selected;
+
+    if (self->dash_combos_updating)
+        return;
+
+    selected = adw_combo_row_get_selected (row);
+    if (selected < G_N_ELEMENTS (values))
+        g_settings_set_string (self->dash_settings, "click-action", values[selected]);
+}
+
+static void
+setup_dash_settings (CcBackgroundPanel *self)
+{
+    GSettings *settings = self->dash_settings;
+
+    sync_dash_combo_rows (self);
+
+    g_signal_connect_object (self->dash_alignment_row, "notify::selected",
+                             G_CALLBACK (on_dash_alignment_row_selected_cb), self,
+                             G_CONNECT_SWAPPED);
+    g_signal_connect_object (self->dash_click_action_row, "notify::selected",
+                             G_CALLBACK (on_dash_click_action_row_selected_cb), self,
+                             G_CONNECT_SWAPPED);
+
+    bind_dash_spin_row (settings, "icon-size", self->dash_icon_size_row);
+    bind_dash_spin_row (settings, "icon-spacing", self->dash_icon_spacing_row);
+    bind_dash_spin_row (settings, "max-icons-per-row", self->dash_max_icons_row);
+    bind_dash_spin_row (settings, "animation-time", self->dash_animation_row);
+    bind_dash_spin_row (settings, "background-opacity", self->dash_background_opacity_row);
+    bind_dash_spin_row (settings, "corner-radius", self->dash_corner_radius_row);
+    bind_dash_spin_row (settings, "border-width", self->dash_border_width_row);
+
+    g_settings_bind (settings, "blur-background", self->dash_background_blur_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (settings, "show-running-indicator", self->dash_running_indicator_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (settings, "show-app-labels", self->dash_labels_row,
+                     "active", G_SETTINGS_BIND_DEFAULT);
+
+    bind_dash_color_button (settings, "background-color", self->dash_background_color_button);
+    bind_dash_color_button (settings, "border-color", self->dash_border_color_button);
+
+    g_signal_connect_object (settings, "changed::dash-alignment",
+                             G_CALLBACK (on_dash_setting_changed_cb), self,
+                             G_CONNECT_SWAPPED);
+    g_signal_connect_object (settings, "changed::click-action",
+                             G_CALLBACK (on_dash_setting_changed_cb), self,
+                             G_CONNECT_SWAPPED);
+}
+
 static const char *
 cc_background_panel_get_help_uri (CcPanel *panel)
 {
@@ -425,6 +638,7 @@ cc_background_panel_dispose (GObject *object)
     g_clear_object (&self->settings);
     g_clear_object (&self->lock_settings);
     g_clear_object (&self->interface_settings);
+    g_clear_object (&self->dash_settings);
     g_clear_object (&self->proxy);
 
     G_OBJECT_CLASS (cc_background_panel_parent_class)->dispose (object);
@@ -464,6 +678,23 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dark_preview);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, default_toggle);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dark_toggle);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_group);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_alignment_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_click_action_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_icon_size_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_icon_spacing_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_max_icons_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_animation_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_background_color_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_background_color_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_background_opacity_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_background_blur_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_corner_radius_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_border_width_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_border_color_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_border_color_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_running_indicator_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dash_labels_row);
 
     gtk_widget_class_bind_template_callback (widget_class, on_color_scheme_toggle_active_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_chooser_background_chosen_cb);
@@ -513,4 +744,11 @@ cc_background_panel_init (CcBackgroundPanel *self)
 
     g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE, NULL, "org.gnome.Shell", "/org/gnome/Shell",
                               "org.gnome.Shell", NULL, got_transition_proxy_cb, self);
+
+    /* Lingmo OS dash settings */
+    self->dash_settings = dash_settings_new ();
+    if (self->dash_settings != NULL)
+        setup_dash_settings (self);
+    else
+        gtk_widget_set_visible (self->dash_group, FALSE);
 }
